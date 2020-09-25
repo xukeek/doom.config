@@ -2,6 +2,8 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://raw.githack.com/nmartin84/raw-files/master/htmlpro.css" />
 #+OPTIONS: toc:2 html-scripts:nil num:nil html-postamble:nil html-style:nil ^:nil
 
+[[file:attachments/workspace.png]]
+
 * New Changes
 1. [2020-06-02 Tue]
    a. Added =org-roam=
@@ -43,7 +45,6 @@ Now we load some default settings for EMACS.
 #+END_SRC
 * Key Bindings
 From here we load some extra key bindings that I use often
-TODO add org-agenda-mode-map key-binds for org-clock-convenience
 TODO remove un-used key-binds
 #+BEGIN_SRC emacs-lisp
 (bind-key "<f6>" #'link-hint-copy-link)
@@ -58,8 +59,6 @@ TODO remove un-used key-binds
       :desc "Move down window" "<down>" #'evil-window-down
       :desc "Move left window" "<left>" #'evil-window-left
       :desc "Move right window" "<right>" #'evil-window-right
-      :desc "Toggle Narrowing" "!" #'org-toggle-narrow-to-subtree
-      :desc "Find and Narrow" "^" #'+org-find-headline-narrow
       :desc "Rifle Project Files" "P" #'helm-org-rifle-project-files
       :prefix ("s" . "+search")
       :desc "Counsel Narrow" "n" #'counsel-narrow
@@ -126,7 +125,8 @@ First I like to add some extra fancy stuff to make orgmode more appealing when i
                   org-ellipsis "▼"))
 #+END_SRC
 
-Other options for ellipsis "▼, ↴, ⬎, ⤷,…, and ⋱."
+- Other options for ellipsis "▼, ↴, ⬎, ⤷,…, and ⋱."
+- Extra options for headline-bullets-list: "◉" "●" "○" "∴"
 
 Add a when condition that only adjust settings when certain features are enabled... This depends on where i'm running Emacs from (eg: Terminla, X11 or native).
 #+BEGIN_SRC emacs-lisp
@@ -134,8 +134,6 @@ Add a when condition that only adjust settings when certain features are enabled
   (setq org-superstar-headline-bullets-list '("∴")
         org-superstar-item-bullet-alist nil))
 #+END_SRC
-
-Extra options for headline-bullets-list: "◉" "●" "○"
 
 Adding additional search functions
 #+BEGIN_SRC emacs-lisp
@@ -172,12 +170,12 @@ Adjusting clock settings
 #+END_SRC
 
 ** Capture Templates
-Here we setup the capture templates we want for ~org-capture~. I use a file template that's pre-filled with my monthly scheduled transactions.
+Here we setup the capture templates we want for ~org-capture~. I use a file template that's pre-filled with my monthly scheduled transactions. (TODO: Add default file-template for new projects.)
 #+BEGIN_SRC emacs-lisp
 (after! org (setq org-capture-templates
       '(("!" "Quick Capture" plain (file "~/Dropbox/org/gtd/inbox.org")
          "* TODO %(read-string \"Task: \")\n:PROPERTIES:\n:CREATED: %U\n:END:")
-        ("p" "New Project" plain (file nick/org-capture-file-picker)
+        ("p" "New Project" plain (file +nick/org-capture-file-picker)
          (file "~/.doom.d/templates/template-projects.org"))
         ("$" "Scheduled Transactions" plain (file "~/Dropbox/org/gtd/finances.ledger")
          (file "~/.doom.d/templates/ledger-scheduled.org"))
@@ -200,7 +198,6 @@ TODO add function to set image-width to *80%* of the window size.
                   projectile-project-search-path '("~/projects/")))
 #+END_SRC
 * Export Settings
-TODO add the embed images code to this section
 #+BEGIN_SRC emacs-lisp
 (after! org (setq org-html-head-include-scripts t
                   org-export-with-toc t
@@ -215,6 +212,23 @@ TODO add the embed images code to this section
                   org-export-with-properties nil
                   org-export-with-smart-quotes t
                   org-export-backends '(pdf ascii html latex odt md pandoc)))
+#+END_SRC
+
+Embed images into the exported HTML files.
+#+BEGIN_SRC emacs-lisp
+(defun replace-in-string (what with in)
+  (replace-regexp-in-string (regexp-quote what) with in nil 'literal))
+
+(defun org-html--format-image (source attributes info)
+  (progn
+    (setq source (replace-in-string "%20" " " source))
+    (format "<img src=\"data:image/%s;base64,%s\"%s />"
+            (or (file-name-extension source) "")
+            (base64-encode-string
+             (with-temp-buffer
+               (insert-file-contents-literally source)
+              (buffer-string)))
+            (file-name-nondirectory source))))
 #+END_SRC
 * Misc Org Mode settings
 #+BEGIN_SRC emacs-lisp
@@ -617,7 +631,7 @@ These are my default ROAM settings
            :head "#+title: ${title}\n"
            :unnarrowed t)
           ("x" "programming" plain (function org-roam-capture--get-point)
-           :file-name "%<%Y%m%d%H%M%S-${slug}"
+           :file-name "%<%Y%m%d%H%M%S>-${slug}"
            :head "#+title: ${title}\n#+roam_tags: %^{tags}\n- source :: [[%^{link}][%^{description}]] \\\n- metadata :: %?\n\n* Notes\n\n* Follow-up Actions"
            :unnarrowed t)
           ("r" "research" entry (function org-roam--capture-get-point)
@@ -687,35 +701,43 @@ These are my default ROAM settings
 (org-super-agenda-mode t)
 
 (setq org-agenda-custom-commands
-      '(("g" "Getting Things Done(gtd)"
+      '(("g" "Getting things done (GTD)"
          ((agenda ""
                   ((org-agenda-files (append (file-expand-wildcards "~/Dropbox/org/gtd/*.org")))
-                   (org-agenda-overriding-header "Agenda")
                    (org-agenda-start-day (org-today))
                    (org-agenda-span '1)))
           (tags-todo "-project/NEXT"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "Next")))
+                ((org-agenda-files (append (list "~/Dropbox/org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-overriding-header "Next")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
+          (tags-todo "project/NEXT|TODO"
+                ((org-agenda-files (append (list "~/Dropbox/org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+;                 (org-agenda-prefix-format " %i %-12:c [%-5e]%l↳ ")
+                 (org-agenda-overriding-header "Projects")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
           (tags-todo "-project/TODO"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "Inbox")))
-          (tags-todo "-project/HOLD"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "On Hold")))
-          (tags-todo "project/TODO|NEXT|HOLD"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "Projects")))))
-        ("l" "The List"
-         ((todo ""
-                ((org-agenda-files (list "~/Dropbox/org/gtd/thelist.org"))
-                 (org-super-agenda-groups '((:auto-tags t)))))))
+                ((org-agenda-files (append (list "~/Dropbox/org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-overriding-header "Inbox")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
+          (todo "HOLD"
+                ((org-agenda-files (append (list "~/.org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-overriding-header "On Hold")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
+          (tags "CLOSED>=\"<today>\""
+                ((org-agenda-overriding-header "\nCompleted today\n")
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-files (append (file-expand-wildcards "~/Dropbox/org/gtd/*.org")))))))
         ("i" "Inbox"
-         ((todo "TODO|HOLD"
+         ((todo ""
                 ((org-agenda-files (list "~/Dropbox/org/gtd/inbox.org"))
                  (org-super-agenda-groups '((:auto-ts t)))))))
         ("x" "Someday"
          ((todo ""
-                ((org-agenda-files (append (file-expand-wildcards "~/Dropbox/org/gtd/incubate.org")))
+                ((org-agenda-files (list "~/Dropbox/org/gtd/incubate.org"))
                  (org-super-agenda-groups
                   '((:auto-parent t)))))))))
 #+END_SRC
@@ -726,25 +748,12 @@ These are my default ROAM settings
   (load secrets)))
 #+END_SRC
 * Hacks
-** Embed Images in HTML org-export
-#+BEGIN_SRC emacs-lisp
-(defun replace-in-string (what with in)
-  (replace-regexp-in-string (regexp-quote what) with in nil 'literal))
-
-(defun org-html--format-image (source attributes info)
-  (progn
-    (setq source (replace-in-string "%20" " " source))
-    (format "<img src=\"data:image/%s;base64,%s\"%s />"
-            (or (file-name-extension source) "")
-            (base64-encode-string
-             (with-temp-buffer
-               (insert-file-contents-literally source)
-              (buffer-string)))
-            (file-name-nondirectory source))))
-#+END_SRC
 * Custom Functions
 Ideas for functions I need:
 - [ ] Clarify task function
+#+BEGIN_SRC emacs-lisp
+(load! "customs.el")
+#+END_SRC
 ** Time Stamps
 #+BEGIN_SRC emacs-lisp
 (defun +nick/org-insert-timestamp ()
@@ -759,11 +768,12 @@ Ideas for functions I need:
 #+END_SRC
 ** Capture Template File Picker
 #+BEGIN_SRC emacs-lisp
-(defun nick/org-capture-file-picker ()
+(defun +nick/org-capture-file-picker ()
   "Select a file from the PROJECTS folder and return file-name."
   (let ((file (read-file-name "Project: " "~/Dropbox/org/gtd/projects/")))
     (expand-file-name (format "%s" file))))
 #+END_SRC
+** TODO Search file headlines and send tree to indirect buffer
 * Theme Settings
 #+BEGIN_SRC emacs-lisp
 (after! org (zyro/monitor-width-profile-setup)

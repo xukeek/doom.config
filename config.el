@@ -1,6 +1,5 @@
-(setq user-full-name "xukeek"
-      user-mail-address "okeoke1011@gmail.com")
-(setq system-time-locale "C")
+(setq user-full-name "Nick Martin"
+      user-mail-address "nmartin84@gmail.com")
 
 (display-time-mode 1)
 (setq display-time-day-and-date t)
@@ -17,8 +16,6 @@
       :desc "Move down window" "<down>" #'evil-window-down
       :desc "Move left window" "<left>" #'evil-window-left
       :desc "Move right window" "<right>" #'evil-window-right
-      :desc "Toggle Narrowing" "!" #'org-toggle-narrow-to-subtree
-      :desc "Find and Narrow" "^" #'+org-find-headline-narrow
       :desc "Rifle Project Files" "P" #'helm-org-rifle-project-files
       :prefix ("s" . "+search")
       :desc "Counsel Narrow" "n" #'counsel-narrow
@@ -47,7 +44,7 @@
    (setq doom-theme 'doom-monokai-pro)
    (setq doom-font (font-spec :family "Input Mono" :size 20))))
 
-(setq diary-file "~/Dropbox/org/diary.org")
+(setq diary-file "~/.org/diary.org")
 
 (when (equal system-type 'gnu/linux)
   (setq doom-font (font-spec :family "Fira Code" :size 18)
@@ -85,7 +82,7 @@
       :prefix ("n" . "notes")
       :desc "Rifle ROAM Notes" "!" #'zyro/rifle-roam)
 
-(after! org (setq org-agenda-diary-file "~/Dropbox/org/diary.org"
+(after! org (setq org-agenda-diary-file "~/.org/diary.org"
                   org-agenda-dim-blocked-tasks t
                   org-agenda-use-time-grid t
                   org-agenda-hide-tags-regexp "\\w+"
@@ -96,22 +93,22 @@
                   org-enforce-todo-checkbox-dependencies nil
                   org-enforce-todo-dependencies t
                   org-habit-show-habits t))
-(after! org (setq org-agenda-files (append (file-expand-wildcards "~/Dropbox/org/gtd/*.org"))))
+(after! org (setq org-agenda-files (append (file-expand-wildcards "~/.org/gtd/*.org"))))
 
 (after! org (setq org-clock-continuously t))
 
 (after! org (setq org-capture-templates
-      '(("!" "Quick Capture" plain (file "~/Dropbox/org/gtd/inbox.org")
+      '(("!" "Quick Capture" plain (file "~/.org/gtd/inbox.org")
          "* TODO %(read-string \"Task: \")\n:PROPERTIES:\n:CREATED: %U\n:END:")
-        ("p" "New Project" plain (file nick/org-capture-file-picker)
+        ("p" "New Project" plain (file +nick/org-capture-file-picker)
          (file "~/.doom.d/templates/template-projects.org"))
-        ("$" "Scheduled Transactions" plain (file "~/Dropbox/org/gtd/finances.ledger")
+        ("$" "Scheduled Transactions" plain (file "~/.org/gtd/finances.ledger")
          (file "~/.doom.d/templates/ledger-scheduled.org"))
-        ("l" "Ledger Transaction" plain (file "~/Dropbox/org/gtd/finances.ledger")
+        ("l" "Ledger Transaction" plain (file "~/.org/gtd/finances.ledger")
          "%(format-time-string \"%Y/%m/%d\") * %^{transaction}\n Income:%^{From Account|Checking|Card|Cash}  -%^{dollar amount}\n Expenses:%^{category}  %\\3\n" :empty-lines-before 1))))
 
 (after! org (setq org-image-actual-width nil
-                  org-archive-location "~/Dropbox/org/gtd/archives.org::datetree"
+                  org-archive-location "~/.org/gtd/archives.org::datetree"
                   projectile-project-search-path '("~/projects/")))
 
 (after! org (setq org-html-head-include-scripts t
@@ -127,6 +124,20 @@
                   org-export-with-properties nil
                   org-export-with-smart-quotes t
                   org-export-backends '(pdf ascii html latex odt md pandoc)))
+
+(defun replace-in-string (what with in)
+  (replace-regexp-in-string (regexp-quote what) with in nil 'literal))
+
+(defun org-html--format-image (source attributes info)
+  (progn
+    (setq source (replace-in-string "%20" " " source))
+    (format "<img src=\"data:image/%s;base64,%s\"%s />"
+            (or (file-name-extension source) "")
+            (base64-encode-string
+             (with-temp-buffer
+               (insert-file-contents-literally source)
+              (buffer-string)))
+            (file-name-nondirectory source))))
 
 (require 'org-id)
 (setq org-link-file-path-type 'relative)
@@ -147,19 +158,19 @@
 
 (after! org (setq org-publish-project-alist
                   '(("attachments"
-                     :base-directory "~/Dropbox/org/"
+                     :base-directory "~/.org/"
                      :recursive t
                      :base-extension "jpg\\|jpeg\\|png\\|pdf\\|css"
                      :publishing-directory "~/publish_html"
                      :publishing-function org-publish-attachment)
                     ("notes-to-orgfiles"
-                     :base-directory "~/Dropbox/org/notes/"
+                     :base-directory "~/.org/notes/"
                      :publishing-directory "~/notes/"
                      :base-extension "org"
                      :recursive t
                      :publishing-function org-org-publish-to-org)
                     ("notes"
-                     :base-directory "~/Dropbox/org/notes/"
+                     :base-directory "~/.org/notes/"
                      :publishing-directory "~/nmartin84.github.io"
                      :section-numbers nil
                      :base-extension "org"
@@ -314,7 +325,7 @@
   :bind (("<f8>" . deft))
   :commands (deft deft-open-file deft-new-file-named)
   :config
-  (setq deft-directory "~/Dropbox/org/"
+  (setq deft-directory "~/.org/"
         deft-auto-save-interval 0
         deft-recursive t
         deft-current-sort-method 'title
@@ -423,8 +434,8 @@
 (setq org-pandoc-options '((standalone . t) (self-contained . t)))
 
 (setq org-roam-tag-sources '(prop last-directory))
-(setq org-roam-db-location "~/Dropbox/org/roam.db")
-(setq org-roam-directory "~/Dropbox/org/")
+(setq org-roam-db-location "~/.org/roam.db")
+(setq org-roam-directory "~/.org/")
 (add-to-list 'safe-local-variable-values
 '(org-roam-directory . "."))
 
@@ -461,7 +472,7 @@
            :head "#+title: ${title}\n"
            :unnarrowed t)
           ("x" "programming" plain (function org-roam-capture--get-point)
-           :file-name "%<%Y%m%d%H%M%S-${slug}"
+           :file-name "%<%Y%m%d%H%M%S>-${slug}"
            :head "#+title: ${title}\n#+roam_tags: %^{tags}\n- source :: [[%^{link}][%^{description}]] \\\n- metadata :: %?\n\n* Notes\n\n* Follow-up Actions"
            :unnarrowed t)
           ("r" "research" entry (function org-roam--capture-get-point)
@@ -523,35 +534,43 @@
 (org-super-agenda-mode t)
 
 (setq org-agenda-custom-commands
-      '(("g" "Getting Things Done(gtd)"
+      '(("g" "Getting things done (GTD)"
          ((agenda ""
-                  ((org-agenda-files (append (file-expand-wildcards "~/Dropbox/org/gtd/*.org")))
-                   (org-agenda-overriding-header "Agenda")
+                  ((org-agenda-files (append (file-expand-wildcards "~/.org/gtd/*.org")))
                    (org-agenda-start-day (org-today))
                    (org-agenda-span '1)))
           (tags-todo "-project/NEXT"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "Next")))
+                ((org-agenda-files (append (list "~/.org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-overriding-header "Next")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
+          (tags-todo "project/NEXT|TODO"
+                ((org-agenda-files (append (list "~/.org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+;                 (org-agenda-prefix-format " %i %-12:c [%-5e]%l↳ ")
+                 (org-agenda-overriding-header "Projects")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
           (tags-todo "-project/TODO"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "Inbox")))
-          (tags-todo "-project/HOLD"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "On Hold")))
-          (tags-todo "project/TODO|NEXT|HOLD"
-                     ((org-agenda-files (list "~/Dropbox/org/gtd/next.org"))
-                      (org-agenda-overriding-header "Projects")))))
-        ("l" "The List"
-         ((todo ""
-                ((org-agenda-files (list "~/Dropbox/org/gtd/thelist.org"))
-                 (org-super-agenda-groups '((:auto-tags t)))))))
+                ((org-agenda-files (append (list "~/.org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-overriding-header "Inbox")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
+          (todo "HOLD"
+                ((org-agenda-files (append (list "~/.org/gtd/next.org")))
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-overriding-header "On Hold")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))
+          (tags "CLOSED>=\"<today>\""
+                ((org-agenda-overriding-header "\nCompleted today\n")
+                 (org-agenda-prefix-format " %-12:c [%-5e] %(my-agenda-prefix) ")
+                 (org-agenda-files (append (file-expand-wildcards "~/.org/gtd/*.org")))))))
         ("i" "Inbox"
-         ((todo "TODO|HOLD"
-                ((org-agenda-files (list "~/Dropbox/org/gtd/inbox.org"))
+         ((todo ""
+                ((org-agenda-files (list "~/.org/gtd/inbox.org"))
                  (org-super-agenda-groups '((:auto-ts t)))))))
         ("x" "Someday"
          ((todo ""
-                ((org-agenda-files (append (file-expand-wildcards "~/Dropbox/org/gtd/incubate.org")))
+                ((org-agenda-files (list "~/.org/gtd/incubate.org"))
                  (org-super-agenda-groups
                   '((:auto-parent t)))))))))
 
@@ -559,19 +578,7 @@
 (when (file-exists-p secrets)
   (load secrets)))
 
-(defun replace-in-string (what with in)
-  (replace-regexp-in-string (regexp-quote what) with in nil 'literal))
-
-(defun org-html--format-image (source attributes info)
-  (progn
-    (setq source (replace-in-string "%20" " " source))
-    (format "<img src=\"data:image/%s;base64,%s\"%s />"
-            (or (file-name-extension source) "")
-            (base64-encode-string
-             (with-temp-buffer
-               (insert-file-contents-literally source)
-              (buffer-string)))
-            (file-name-nondirectory source))))
+(load! "customs.el")
 
 (defun +nick/org-insert-timestamp ()
   "Insert active timestamp at POS."
@@ -583,11 +590,11 @@
       :prefix ("j" . "nicks functions")
       :desc "Insert timestamp at POS" "i" #'+nick/org-insert-timestamp)
 
-(defun nick/org-capture-file-picker ()
+(defun +nick/org-capture-file-picker ()
   "Select a file from the PROJECTS folder and return file-name."
-  (let ((file (read-file-name "Project: " "~/Dropbox/org/gtd/projects/")))
+  (let ((file (read-file-name "Project: " "~/.org/gtd/projects/")))
     (expand-file-name (format "%s" file))))
 
 (after! org (zyro/monitor-width-profile-setup)
-  ;;(toggle-frame-fullscreen)
+  (toggle-frame-fullscreen)
   (setq doom-theme 'doom-one))
